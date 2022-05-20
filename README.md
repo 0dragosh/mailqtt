@@ -10,7 +10,7 @@ My usecase is a standard way of fetching events out of IP cameras that don't sup
 
 1. `pip install -r requirements.txt`.
 
-1. Give it some env vars. These are the defaults so omit whatever looks good.
+1. Env vars and defaults:
    * SMTP_PORT=1025
    * MQTT_HOST=localhost
    * MQTT_PORT=1883
@@ -24,16 +24,9 @@ My usecase is a standard way of fetching events out of IP cameras that don't sup
    * ATTACHMENTS_DIR=/attachments
    * DEBUG=False
 
-1. Go.
-```
-$ python mailqtt.py
-2022-05-20 18:16:19,123 - root - INFO - Running
-```
-
 ## Run it in docker
 
 ```
-$ docker build -t mailqtt .
 $ docker run -d \
     --name mailqtt \
     --net host \
@@ -41,9 +34,7 @@ $ docker run -d \
     -e "MQTT_USERNAME=mqtt" \
     -e "MQTT_PASSWORD=mqtt" \
     -e "DEBUG=True" \
-    -v /etc/localtime:/etc/localtime:ro \
-    -v $PWD/log:/mailqtt/log \
     -v $PWD/attachments:/mailqtt/attachments \
-    mailqtt
+    ghcr.io/0dragosh/mailqtt:latest
 ```
 
