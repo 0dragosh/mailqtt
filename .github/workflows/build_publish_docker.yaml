@@ -27,7 +27,7 @@ jobs:
       - name: Build and Push
         uses: docker/build-push-action@v3
         with:
-          push: true
+          push: false
           context: .
           tags: |
             ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.tag }}
