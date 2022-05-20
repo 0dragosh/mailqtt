@@ -99,7 +99,7 @@ class MailQTTHandler:
                     continue
                 filename = att.get_filename()
                 image_data = att.get_content()
-                file_path = os.path.join(config["SAVE_ATTACHMENTS_DIR"] + "/", filename)
+                file_path = os.path.join(config["SAVE_ATTACHMENTS_DIR"] + "/", camera + "-" + filename)
                 log.info("Saving attached file %s to %s", filename, file_path)
                 payload["filename"] = filename
                 with open(file_path, "wb") as f:
