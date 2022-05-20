@@ -1,16 +1,12 @@
 # mailqtt
 
-Receive emails and publish to MQTT. Super simple stuff. Topic will be `<configurable_prefix>/<sender_email.replace('@', '')>`.
+Receive emails via SMTP and publish to MQTT.
 
-I needed this to make my D-Link camera's motion sensor functionality useful.
-Available actions on the camera are to send an email or upload an image to an FTP..
-This script makes it easier to integrate into automation systems.
-
-It's based on aiosmtpd and paho-mqtt.
+My usecase is a standard way of fetching events out of IP cameras that don't support ONVIF events, Reolink, in particular.
 
 ## Run it
 
-1. Create venv and activate it. Or don't.
+1. Create venv and activate it.
 
 1. `pip install -r requirements.txt`.
 
@@ -31,7 +27,7 @@ It's based on aiosmtpd and paho-mqtt.
 1. Go.
 ```
 $ python mailqtt.py
-2017-11-08 22:36:27,658 - root - INFO - Running
+2022-05-20 18:16:19,123 - root - INFO - Running
 ```
 
 ## Run it in docker
