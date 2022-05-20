@@ -1,0 +1,22 @@
+name: 'build'
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    name: 'Build'
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Build:checkout"
+        uses: actions/checkout@v2
+      - name: 'Build:dockerimage'
+        uses: docker/build-push-action@v1
+        with:
+          registry: ghcr.io
+          username: "0dragosh"
+          password: ${{ secrets.PAT }}
+          repository: 0dragosh/mailqtt
+          tags: latest

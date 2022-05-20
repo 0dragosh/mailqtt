@@ -1,6 +1,7 @@
-FROM alpine:latest
-WORKDIR /emqtt
-COPY emqtt.py requirements.txt ./
-RUN apk add --no-cache python3 py3-pip && pip3 install -r requirements.txt
+FROM python:3.10-slim
+WORKDIR /mailqtt
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
+COPY mailqtt.py .
 EXPOSE 1025
-CMD ["python3", "emqtt.py"]
+CMD ["python3", "mailqtt.py"]

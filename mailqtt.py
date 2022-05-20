@@ -3,6 +3,8 @@ import asyncio
 import email
 import logging
 import os
+import json
+import re
 import signal
 import time
 from datetime import datetime
@@ -18,12 +20,12 @@ defaults = {
     "MQTT_PORT": 1883,
     "MQTT_USERNAME": "",
     "MQTT_PASSWORD": "",
-    "MQTT_TOPIC": "emqtt",
-    "MQTT_PAYLOAD": "ON",
+    "MQTT_TOPIC": "mqtt",
     "MQTT_RESET_TIME": "300",
     "MQTT_RESET_PAYLOAD": "OFF",
     "SAVE_ATTACHMENTS": "True",
     "SAVE_ATTACHMENTS_DURING_RESET_TIME": "False",
+    "SAVE_ATTACHMENTS_DIR": "/attachments",
     "DEBUG": "False",
 }
 config = {
@@ -38,7 +40,7 @@ for key, value in config.items():
 
 level = logging.DEBUG if config["DEBUG"] else logging.INFO
 
-log = logging.getLogger("emqtt")
+log = logging.getLogger("mailqtt")
 log.setLevel(level)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
@@ -48,7 +50,7 @@ ch.setFormatter(formatter)
 log.addHandler(ch)
 
 
-class EMQTTHandler:
+class MailQTTHandler:
     def __init__(self, loop):
         self.loop = loop
         self.reset_time = int(config["MQTT_RESET_TIME"])
@@ -62,14 +64,21 @@ class EMQTTHandler:
     async def handle_DATA(self, server, session, envelope):
         log.debug("Message from %s", envelope.mail_from)
         msg = email.message_from_bytes(envelope.original_content, policy=default)
+        decoded_msg = envelope.content.decode("utf8", errors="replace")
+        
         log.debug(
             "Message data (truncated): %s",
-            envelope.content.decode("utf8", errors="replace")[:250],
+            decoded_msg[:350],
         )
-        topic = "{}/{}".format(
-            config["MQTT_TOPIC"], envelope.mail_from.replace("@", "")
-        )
-        self.mqtt_publish(topic, config["MQTT_PAYLOAD"])
+        topic = config["MQTT_TOPIC"]
+        subject = msg['Subject']
+        camera_long = re.findall("Person Detected from \w+", subject)[0]
+        camera = camera_long.replace("Person Detected from ", "")
+
+        payload = {
+            "subject": subject,
+            "camera": camera
+        }
 
         # Save attached files if configured to do so.
         if config["SAVE_ATTACHMENTS"] and (
@@ -78,7 +87,7 @@ class EMQTTHandler:
             or config["SAVE_ATTACHMENTS_DURING_RESET_TIME"]
         ):
             log.debug(
-                'Saving attachments. Topic "%s" aldready triggered: %s, '
+                'Saving attachments. Topic "%s" already triggered: %s, '
                 "Save attachment override: %s",
                 topic,
                 topic in self.handles,
@@ -90,13 +99,16 @@ class EMQTTHandler:
                     continue
                 filename = att.get_filename()
                 image_data = att.get_content()
-                file_path = os.path.join("attachments", filename)
+                file_path = os.path.join(config["SAVE_ATTACHMENTS_DIR"] + "/", filename)
                 log.info("Saving attached file %s to %s", filename, file_path)
+                payload["filename"] = filename
                 with open(file_path, "wb") as f:
                     f.write(image_data)
         else:
             log.debug("Not saving attachments")
             log.debug(self.handles)
+        
+        self.mqtt_publish(topic, json.dumps(payload))
 
         # Cancel any current scheduled resets of this topic
         if topic in self.handles:
@@ -140,16 +152,9 @@ class EMQTTHandler:
 if __name__ == "__main__":
     log.debug(", ".join([f"{k}={v}" for k, v in config.items()]))
 
-    # If there's a dir called log - set up a filehandler
-    if os.path.exists("log"):
-        log.info("Setting up a filehandler")
-        fh = logging.FileHandler("log/emqtt.log")
-        fh.setFormatter(formatter)
-        log.addHandler(fh)
-
     loop = asyncio.get_event_loop()
     c = Controller(
-        handler=EMQTTHandler(loop),
+        handler=MailQTTHandler(loop),
         loop=loop,
         hostname="0.0.0.0",
         port=config["SMTP_PORT"],
