@@ -9,6 +9,8 @@ import signal
 import time
 from datetime import datetime
 from email.policy import default
+from unittest import case
+from weakref import KeyedRef
 
 from aiosmtpd.controller import Controller
 from paho.mqtt import publish
@@ -61,6 +63,18 @@ class MailQTTHandler:
         if config["SAVE_ATTACHMENTS"]:
             log.info("Configured to save attachments")
 
+    def prep_msg(self, msg):
+        try:
+            subject = msg['Subject']
+            cam_match = re.compile('Person Detected from (.*) at')
+            thing_match = re.compile('(.*) Detected from')
+        except KeyError as e:
+            raise e("Malformed message. Is this testing?")
+        camera = cam_match.search(subject).group(1)
+        detected_thing = thing_match.search(subject).group(1)
+
+        return camera, detected_thing, detected_thing.lower()
+
     async def handle_DATA(self, server, session, envelope):
         log.debug("Message from %s", envelope.mail_from)
         msg = email.message_from_bytes(envelope.original_content, policy=default)
@@ -70,14 +84,13 @@ class MailQTTHandler:
             "Message data (truncated): %s",
             decoded_msg[:350],
         )
-        topic = config["MQTT_TOPIC"]
-        subject = msg['Subject']
-        camera_long = re.findall("Person Detected from \w+", subject)[0]
-        camera = camera_long.replace("Person Detected from ", "")
-
+        camera, detected_thing, topic_suffix = self.prep_msg(msg)
+        topic = config["MQTT_TOPIC"] + "/" + topic_suffix
+        
         payload = {
-            "subject": subject,
-            "camera": camera
+            "subject": msg['Subject'],
+            "camera": camera,
+            "detected_thing": detected_thing
         }
 
         # Save attached files if configured to do so.
