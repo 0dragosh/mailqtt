@@ -4,6 +4,8 @@ Receive emails via SMTP and publish to MQTT.
 
 My usecase is a standard way of fetching events out of IP cameras that don't support ONVIF events, Reolink, in particular.
 
+Even though you might not see a recent release, this piece of software is maintained since I run it in my homelab and I rely on it.
+
 ## Run it
 
 1. Create venv and activate it.
